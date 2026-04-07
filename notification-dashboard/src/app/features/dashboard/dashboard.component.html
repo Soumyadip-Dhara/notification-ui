@@ -1,0 +1,276 @@
+<p-toast />
+
+<div class="dashboard-container">
+  <!-- Header -->
+  <div class="dashboard-header">
+    <h1><i class="pi pi-bell"></i> Notification Dashboard</h1>
+    <p class="subtitle">Monitor and track all notification logs across SMS and Email channels</p>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-grid">
+    @if (summaryLoading()) {
+      @for (item of [1,2,3,4,5,6]; track item) {
+        <p-card styleClass="summary-card">
+          <p-skeleton width="60%" height="1rem" styleClass="mb-2"></p-skeleton>
+          <p-skeleton width="40%" height="2rem"></p-skeleton>
+        </p-card>
+      }
+    } @else if (summary()) {
+      <p-card styleClass="summary-card summary-card--total">
+        <div class="summary-content">
+          <div class="summary-icon"><i class="pi pi-chart-bar"></i></div>
+          <div class="summary-info">
+            <span class="summary-label">Total</span>
+            <span class="summary-value">{{ summary()!.total }}</span>
+          </div>
+        </div>
+      </p-card>
+      <p-card styleClass="summary-card summary-card--delivered">
+        <div class="summary-content">
+          <div class="summary-icon"><i class="pi pi-check-circle"></i></div>
+          <div class="summary-info">
+            <span class="summary-label">Delivered</span>
+            <span class="summary-value">{{ summary()!.delivered }}</span>
+          </div>
+        </div>
+      </p-card>
+      <p-card styleClass="summary-card summary-card--sent">
+        <div class="summary-content">
+          <div class="summary-icon"><i class="pi pi-send"></i></div>
+          <div class="summary-info">
+            <span class="summary-label">Sent</span>
+            <span class="summary-value">{{ summary()!.sent }}</span>
+          </div>
+        </div>
+      </p-card>
+      <p-card styleClass="summary-card summary-card--failed">
+        <div class="summary-content">
+          <div class="summary-icon"><i class="pi pi-times-circle"></i></div>
+          <div class="summary-info">
+            <span class="summary-label">Failed</span>
+            <span class="summary-value">{{ summary()!.failed }}</span>
+          </div>
+        </div>
+      </p-card>
+      <p-card styleClass="summary-card summary-card--pending">
+        <div class="summary-content">
+          <div class="summary-icon"><i class="pi pi-clock"></i></div>
+          <div class="summary-info">
+            <span class="summary-label">Pending</span>
+            <span class="summary-value">{{ summary()!.pending + summary()!.processing }}</span>
+          </div>
+        </div>
+      </p-card>
+      <p-card styleClass="summary-card summary-card--rate">
+        <div class="summary-content">
+          <div class="summary-icon"><i class="pi pi-percentage"></i></div>
+          <div class="summary-info">
+            <span class="summary-label">Success Rate</span>
+            <span class="summary-value">{{ successRate() }}%</span>
+          </div>
+        </div>
+      </p-card>
+    }
+  </div>
+
+  <!-- Channel Breakdown -->
+  @if (summary()) {
+    <div class="breakdown-grid">
+      <p-card styleClass="breakdown-card">
+        <ng-template pTemplate="header">
+          <div class="breakdown-header">
+            <i class="pi pi-envelope"></i>
+            <span>Email</span>
+          </div>
+        </ng-template>
+        <div class="breakdown-count">{{ summary()!.byType.email }} notifications</div>
+      </p-card>
+      <p-card styleClass="breakdown-card">
+        <ng-template pTemplate="header">
+          <div class="breakdown-header">
+            <i class="pi pi-mobile"></i>
+            <span>SMS</span>
+          </div>
+        </ng-template>
+        <div class="breakdown-count">{{ summary()!.byType.sms }} notifications</div>
+      </p-card>
+      <p-card styleClass="breakdown-card">
+        <ng-template pTemplate="header">
+          <div class="breakdown-header">
+            <i class="pi pi-list"></i>
+            <span>Via Queue</span>
+          </div>
+        </ng-template>
+        <div class="breakdown-count">{{ summary()!.byMode.queue }} notifications</div>
+      </p-card>
+      <p-card styleClass="breakdown-card">
+        <ng-template pTemplate="header">
+          <div class="breakdown-header">
+            <i class="pi pi-bolt"></i>
+            <span>Direct</span>
+          </div>
+        </ng-template>
+        <div class="breakdown-count">{{ summary()!.byMode.direct }} notifications</div>
+      </p-card>
+    </div>
+  }
+
+  <p-divider />
+
+  <!-- Filters -->
+  <p-card styleClass="filter-card">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label>Type</label>
+        <p-select
+          [options]="typeOptions"
+          [(ngModel)]="selectedType"
+          optionLabel="label"
+          optionValue="value"
+          (onChange)="onFilterChange()"
+          styleClass="filter-select"
+        />
+      </div>
+      <div class="filter-group">
+        <label>Mode</label>
+        <p-select
+          [options]="modeOptions"
+          [(ngModel)]="selectedMode"
+          optionLabel="label"
+          optionValue="value"
+          (onChange)="onFilterChange()"
+          styleClass="filter-select"
+        />
+      </div>
+      <div class="filter-group">
+        <label>Status</label>
+        <p-select
+          [options]="statusOptions"
+          [(ngModel)]="selectedStatus"
+          optionLabel="label"
+          optionValue="value"
+          (onChange)="onFilterChange()"
+          styleClass="filter-select"
+        />
+      </div>
+      <div class="filter-group filter-group--search">
+        <label>Request ID</label>
+        <p-iconfield>
+          <p-inputicon styleClass="pi pi-search" />
+          <input
+            pInputText
+            [(ngModel)]="searchRequestId"
+            placeholder="Search request ID..."
+            (input)="onFilterChange()"
+          />
+        </p-iconfield>
+      </div>
+      <div class="filter-group filter-group--search">
+        <label>Recipient</label>
+        <p-iconfield>
+          <p-inputicon styleClass="pi pi-user" />
+          <input
+            pInputText
+            [(ngModel)]="searchRecipient"
+            placeholder="Search recipient..."
+            (input)="onFilterChange()"
+          />
+        </p-iconfield>
+      </div>
+      <div class="filter-actions">
+        <p-button
+          label="Clear"
+          icon="pi pi-times"
+          severity="secondary"
+          (onClick)="clearFilters()"
+        />
+      </div>
+    </div>
+  </p-card>
+
+  <!-- Data Table -->
+  <p-card styleClass="table-card">
+    <p-table
+      [value]="logs()"
+      [loading]="loading()"
+      [paginator]="true"
+      [rows]="pageSize"
+      [totalRecords]="totalRecords()"
+      [lazy]="true"
+      (onPage)="onPageChange($event)"
+      [rowsPerPageOptions]="[10, 20, 50]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Showing {first} to {last} of {totalRecords} notifications"
+      styleClass="p-datatable-gridlines"
+      responsiveLayout="scroll"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th>Request ID</th>
+          <th>Type</th>
+          <th>Mode</th>
+          <th>Recipient</th>
+          <th>Subject / Message</th>
+          <th>Status</th>
+          <th>Created At</th>
+          <th>Updated At</th>
+          <th>Actions</th>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="body" let-log>
+        <tr>
+          <td>
+            <span class="request-id">{{ log.requestId }}</span>
+          </td>
+          <td>
+            <span class="type-badge">
+              <i [class]="getTypeIcon(log.type)"></i>
+              {{ log.type | titlecase }}
+            </span>
+          </td>
+          <td>
+            <span class="mode-badge">
+              <i [class]="getModeIcon(log.mode)"></i>
+              {{ log.mode | titlecase }}
+            </span>
+          </td>
+          <td class="recipient">{{ log.recipient }}</td>
+          <td class="message-col">
+            @if (log.subject) {
+              <span class="subject">{{ log.subject }}</span>
+            } @else {
+              <span class="message-text">{{ log.message | slice:0:60 }}{{ log.message.length > 60 ? '...' : '' }}</span>
+            }
+          </td>
+          <td>
+            <p-tag
+              [value]="log.status | titlecase"
+              [severity]="getStatusSeverity(log.status)"
+            />
+          </td>
+          <td class="timestamp">{{ log.createdAt | date:'short' }}</td>
+          <td class="timestamp">{{ log.updatedAt | date:'short' }}</td>
+          <td>
+            <p-button
+              icon="pi pi-eye"
+              [rounded]="true"
+              [text]="true"
+              severity="info"
+              pTooltip="View Timeline"
+              (onClick)="viewTimeline(log.requestId)"
+            />
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="9" class="empty-message">
+            <i class="pi pi-inbox"></i>
+            <span>No notifications found</span>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </p-card>
+</div>

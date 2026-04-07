@@ -1,0 +1,137 @@
+<p-toast />
+
+<div class="timeline-container">
+  <!-- Header -->
+  <div class="timeline-header">
+    <p-button
+      icon="pi pi-arrow-left"
+      label="Back to Dashboard"
+      [text]="true"
+      (onClick)="goBack()"
+      styleClass="back-btn"
+    />
+    <div class="header-info">
+      <h1><i class="pi pi-sitemap"></i> Request Timeline</h1>
+      <p class="request-id-label">Request ID: <code>{{ requestId() }}</code></p>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <p-card>
+        <p-skeleton width="30%" height="1.5rem" styleClass="mb-3"></p-skeleton>
+        <p-skeleton width="50%" height="1rem" styleClass="mb-5"></p-skeleton>
+        @for (item of [1,2,3,4]; track item) {
+          <div class="skeleton-timeline-item">
+            <p-skeleton shape="circle" width="2.5rem" height="2.5rem"></p-skeleton>
+            <div class="skeleton-content">
+              <p-skeleton width="25%" height="1rem" styleClass="mb-2"></p-skeleton>
+              <p-skeleton width="60%" height="0.875rem"></p-skeleton>
+            </div>
+          </div>
+        }
+      </p-card>
+    </div>
+  } @else if (error()) {
+    <p-card styleClass="error-card">
+      <div class="error-state">
+        <i class="pi pi-exclamation-triangle"></i>
+        <h3>Unable to Load Timeline</h3>
+        <p>{{ error() }}</p>
+        <p-button label="Retry" icon="pi pi-refresh" (onClick)="loadTimeline(requestId())" />
+      </div>
+    </p-card>
+  } @else if (timeline()) {
+    <!-- Notification Info Card -->
+    <p-card styleClass="info-card">
+      <div class="notification-info">
+        <div class="info-row">
+          <div class="info-item">
+            <span class="info-label">Type</span>
+            <span class="info-value">
+              <i [class]="getTypeIcon(timeline()!.type)"></i>
+              {{ timeline()!.type | titlecase }}
+            </span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Mode</span>
+            <span class="info-value">{{ getModeLabel(timeline()!.mode) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Recipient</span>
+            <span class="info-value recipient">{{ timeline()!.recipient }}</span>
+          </div>
+          @if (timeline()!.subject) {
+            <div class="info-item">
+              <span class="info-label">Subject</span>
+              <span class="info-value">{{ timeline()!.subject }}</span>
+            </div>
+          }
+          <div class="info-item">
+            <span class="info-label">Current Status</span>
+            <p-tag
+              [value]="timeline()!.currentStatus | titlecase"
+              [severity]="getStatusSeverity(timeline()!.currentStatus)"
+            />
+          </div>
+          <div class="info-item">
+            <span class="info-label">Total Events</span>
+            <span class="info-value">{{ timeline()!.events.length }}</span>
+          </div>
+        </div>
+      </div>
+    </p-card>
+
+    <!-- Timeline -->
+    <p-card styleClass="timeline-card">
+      <h3 class="timeline-title"><i class="pi pi-history"></i> Event Timeline</h3>
+      <p-timeline [value]="timeline()!.events" align="left" styleClass="notification-timeline">
+        <ng-template pTemplate="marker" let-event>
+          <div
+            class="timeline-marker"
+            [style.background-color]="getEventColor(event.event)"
+          >
+            <i [class]="getEventIcon(event.event)"></i>
+          </div>
+        </ng-template>
+        <ng-template pTemplate="content" let-event>
+          <div class="timeline-event-card" [class]="'event-' + event.event">
+            <div class="event-header">
+              <div class="event-title-row">
+                <span class="event-name">{{ event.event | titlecase }}</span>
+                <p-tag
+                  [value]="event.status | titlecase"
+                  [severity]="getEventSeverity(event.status)"
+                  styleClass="event-status-tag"
+                />
+              </div>
+              <span class="event-timestamp">{{ event.timestamp | date:'medium' }}</span>
+            </div>
+            <p class="event-message">{{ event.message }}</p>
+            @if (event.durationMs) {
+              <span class="event-duration">
+                <i class="pi pi-stopwatch"></i>
+                {{ formatDuration(event.durationMs) }} since previous step
+              </span>
+            }
+            @if (event.details && getDetailsEntries(event.details).length > 0) {
+              <div class="event-details">
+                @for (entry of getDetailsEntries(event.details); track entry.key) {
+                  <p-chip
+                    [label]="entry.key + ': ' + entry.value"
+                    styleClass="detail-chip"
+                  />
+                }
+              </div>
+            }
+          </div>
+        </ng-template>
+        <ng-template pTemplate="opposite" let-event>
+          <div class="event-time-label">
+            {{ event.timestamp | date:'shortTime' }}
+          </div>
+        </ng-template>
+      </p-timeline>
+    </p-card>
+  }
+</div>

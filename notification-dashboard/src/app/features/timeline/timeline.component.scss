@@ -1,0 +1,240 @@
+.timeline-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.timeline-header {
+  margin-bottom: 1.5rem;
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--p-primary-color, #6366f1);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.5rem 0 0.25rem;
+  }
+
+  .request-id-label {
+    color: var(--p-text-muted-color, #6b7280);
+    margin: 0;
+
+    code {
+      font-family: monospace;
+      background: var(--p-surface-100, #f3f4f6);
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.9em;
+      color: var(--p-primary-color, #6366f1);
+    }
+  }
+}
+
+.info-card {
+  margin-bottom: 1.5rem;
+}
+
+.notification-info {
+  .info-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+  }
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 120px;
+}
+
+.info-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--p-text-muted-color, #6b7280);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.info-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--p-text-color, #111827);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+
+  &.recipient {
+    font-family: monospace;
+  }
+}
+
+.timeline-card {
+  .timeline-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--p-text-color, #111827);
+  }
+}
+
+:host ::ng-deep {
+  .notification-timeline {
+    .p-timeline-event-content {
+      padding-bottom: 2rem;
+    }
+  }
+}
+
+.timeline-marker {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+
+  i {
+    font-size: 0.9rem;
+  }
+}
+
+.timeline-event-card {
+  background: var(--p-surface-50, #f9fafb);
+  border: 1px solid var(--p-surface-200, #e5e7eb);
+  border-radius: 8px;
+  padding: 0.875rem 1rem;
+  margin-left: 0.5rem;
+  max-width: 560px;
+
+  &.event-failed {
+    border-color: #fca5a5;
+    background: #fff5f5;
+  }
+
+  &.event-delivered {
+    border-color: #86efac;
+    background: #f0fdf4;
+  }
+
+  &.event-retry {
+    border-color: #fdba74;
+    background: #fff7ed;
+  }
+}
+
+.event-header {
+  margin-bottom: 0.4rem;
+}
+
+.event-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.2rem;
+}
+
+.event-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--p-text-color, #111827);
+}
+
+.event-timestamp {
+  font-size: 0.75rem;
+  color: var(--p-text-muted-color, #6b7280);
+}
+
+.event-message {
+  font-size: 0.875rem;
+  color: var(--p-text-color, #374151);
+  margin: 0.25rem 0 0;
+}
+
+.event-duration {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--p-text-muted-color, #6b7280);
+  margin-top: 0.4rem;
+  background: var(--p-surface-100, #f3f4f6);
+  padding: 0.15rem 0.5rem;
+  border-radius: 20px;
+}
+
+.event-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+
+:host ::ng-deep {
+  .detail-chip {
+    font-size: 0.75rem;
+
+    .p-chip {
+      padding: 0.2rem 0.6rem;
+      background: var(--p-surface-200, #e5e7eb);
+    }
+  }
+
+  .event-status-tag {
+    font-size: 0.7rem;
+  }
+}
+
+.event-time-label {
+  font-size: 0.8rem;
+  color: var(--p-text-muted-color, #6b7280);
+  white-space: nowrap;
+  padding-right: 1rem;
+}
+
+.loading-state {
+  .skeleton-timeline-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .skeleton-content {
+    flex: 1;
+  }
+}
+
+.error-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem;
+  text-align: center;
+
+  i {
+    font-size: 3rem;
+    color: #ef4444;
+  }
+
+  h3 {
+    margin: 0;
+    color: var(--p-text-color, #111827);
+  }
+
+  p {
+    color: var(--p-text-muted-color, #6b7280);
+    margin: 0;
+  }
+}
