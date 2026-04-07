@@ -1,0 +1,4 @@
+# Angular build artifacts and cache
+notification-dashboard/dist/
+notification-dashboard/node_modules/
+notification-dashboard/.angular/
