@@ -105,6 +105,8 @@ export class DashboardComponent implements OnInit {
     this.loadLogs();
   }
 
+  // ===================== SUMMARY =====================
+
   loadSummary(): void {
     this.summaryLoading.set(true);
     this.notificationService.getSummary().subscribe({
@@ -114,31 +116,59 @@ export class DashboardComponent implements OnInit {
       },
       error: () => {
         this.summaryLoading.set(false);
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load summary' });
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'Failed to load summary',
+        });
       },
     });
   }
+
+  // ===================== LOGS =====================
 
   loadLogs(): void {
     this.loading.set(true);
-    this.notificationService.getNotifications(this.buildFilter(), this.page, this.pageSize).subscribe({
-      next: (result) => {
-        this.logs.set(result.items);
-        this.totalRecords.set(result.totalCount);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.loading.set(false);
-        this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Failed to load notifications' });
-      },
-    });
+
+    const filter = this.buildFilter();
+
+    console.log('FILTER:', filter);
+    console.log('PAGE:', this.page, 'SIZE:', this.pageSize);
+
+    this.notificationService
+      .getNotifications(filter, this.page, this.pageSize)
+      .subscribe({
+        next: (result) => {
+          const res = result?.result;
+
+          this.logs.set(res.items ?? []);
+          this.totalRecords.set(res.totalCount ?? 0);
+          console.log(this.logs());
+          
+
+          this.loading.set(false);
+        },
+        error: () => {
+          this.loading.set(false);
+          this.messageService.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to load notifications',
+          });
+        },
+      });
   }
 
+  // ===================== PAGINATION =====================
+
   onPageChange(event: TablePageEvent): void {
-    this.page = (event.first ?? 0) / this.pageSize + 1;
     this.pageSize = event.rows ?? 10;
+    this.page = Math.floor((event.first ?? 0) / this.pageSize) + 1;
+
     this.loadLogs();
   }
+
+  // ===================== FILTERS =====================
 
   applyFilters(): void {
     this.page = 1;
@@ -161,12 +191,63 @@ export class DashboardComponent implements OnInit {
     this.loadLogs();
   }
 
+  private buildFilter(): NotificationFilter {
+    return {
+      type: this.mapType(this.selectedType) as NotificationType | undefined,
+      mode: this.mapMode(this.selectedMode) as NotificationMode | undefined,
+      status: this.mapStatus(this.selectedStatus) as NotificationStatus | undefined,
+      requestId: this.searchRequestId || undefined,
+      recipient: this.searchRecipient || undefined,
+    };
+  }
+
+  // ===================== MAPPERS (CRITICAL FIX) =====================
+
+  private mapType(value: string): string | undefined {
+    if (!value) return undefined;
+    return value.toUpperCase(); // email -> EMAIL
+  }
+
+  private mapMode(value: string): string | undefined {
+    if (!value) return undefined;
+
+    if (value === 'queue') return 'VIA QUEUE';
+    if (value === 'direct') return 'DIRECT';
+
+    return undefined;
+  }
+
+  private mapStatus(value: string): number | undefined {
+    switch (value) {
+      case 'sent':
+      case 'delivered':
+        return 1;
+
+      case 'failed':
+        return 0;
+
+      case 'pending':
+      case 'processing':
+        return 2;
+
+      default:
+        return undefined;
+    }
+  }
+
+  // ===================== UI HELPERS =====================
+
   viewTimeline(requestId: string): void {
     this.router.navigate(['/timeline', requestId]);
   }
 
-  getStatusSeverity(status: NotificationStatus): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
-    const map: Record<NotificationStatus, 'success' | 'info' | 'warn' | 'danger' | 'secondary'> = {
+  getStatusSeverity(
+    status: NotificationStatus
+  ): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
+    const map: Record<
+      NotificationStatus,
+      'success' | 'info' | 'warn' | 'danger' | 'secondary'
+    > = {
       delivered: 'success',
       sent: 'info',
       processing: 'warn',
@@ -184,13 +265,26 @@ export class DashboardComponent implements OnInit {
     return mode === 'queue' ? 'pi pi-list' : 'pi pi-bolt';
   }
 
-  private buildFilter(): NotificationFilter {
-    return {
-      type: this.selectedType as NotificationType || undefined,
-      mode: this.selectedMode as NotificationMode || undefined,
-      status: this.selectedStatus as NotificationStatus || undefined,
-      requestId: this.searchRequestId || undefined,
-      recipient: this.searchRecipient || undefined,
-    };
+
+
+
+
+  getMetaValue(metadata: string, key: string): any {
+  if (!metadata) return null;
+  try {
+    const parsed = JSON.parse(metadata);
+    return parsed[key];
+  } catch {
+    return null;
   }
+}
+
+getStatusLabel(status: number | null): string {
+  switch (status) {
+    case 0: return 'Failed';
+    case 1: return 'Success';
+    case 2: return 'Pending';
+    default: return 'Unknown';
+  }
+}
 }

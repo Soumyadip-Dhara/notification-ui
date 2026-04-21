@@ -119,75 +119,6 @@
   <p-divider />
 
   <!-- Filters -->
-  <p-card styleClass="filter-card">
-    <div class="filter-row">
-      <div class="filter-group">
-        <label>Type</label>
-        <p-select
-          [options]="typeOptions"
-          [(ngModel)]="selectedType"
-          optionLabel="label"
-          optionValue="value"
-          (onChange)="onFilterChange()"
-          styleClass="filter-select"
-        />
-      </div>
-      <div class="filter-group">
-        <label>Mode</label>
-        <p-select
-          [options]="modeOptions"
-          [(ngModel)]="selectedMode"
-          optionLabel="label"
-          optionValue="value"
-          (onChange)="onFilterChange()"
-          styleClass="filter-select"
-        />
-      </div>
-      <div class="filter-group">
-        <label>Status</label>
-        <p-select
-          [options]="statusOptions"
-          [(ngModel)]="selectedStatus"
-          optionLabel="label"
-          optionValue="value"
-          (onChange)="onFilterChange()"
-          styleClass="filter-select"
-        />
-      </div>
-      <div class="filter-group filter-group--search">
-        <label>Request ID</label>
-        <p-iconfield>
-          <p-inputicon styleClass="pi pi-search" />
-          <input
-            pInputText
-            [(ngModel)]="searchRequestId"
-            placeholder="Search request ID..."
-            (input)="onFilterChange()"
-          />
-        </p-iconfield>
-      </div>
-      <div class="filter-group filter-group--search">
-        <label>Recipient</label>
-        <p-iconfield>
-          <p-inputicon styleClass="pi pi-user" />
-          <input
-            pInputText
-            [(ngModel)]="searchRecipient"
-            placeholder="Search recipient..."
-            (input)="onFilterChange()"
-          />
-        </p-iconfield>
-      </div>
-      <div class="filter-actions">
-        <p-button
-          label="Clear"
-          icon="pi pi-times"
-          severity="secondary"
-          (onClick)="clearFilters()"
-        />
-      </div>
-    </div>
-  </p-card>
 
   <!-- Data Table -->
   <p-card styleClass="table-card">
@@ -212,13 +143,19 @@
           <th>Mode</th>
           <th>Recipient</th>
           <th>Subject / Message</th>
-          <th>Status</th>
-          <th>Created At</th>
-          <th>Updated At</th>
+          <th pSortableColumn="status">
+            Status
+            <p-sortIcon field="status"></p-sortIcon>
+          </th>
+          <th pSortableColumn="createdAt">
+            Created At
+            <p-sortIcon field="createdAt"></p-sortIcon>
+          </th>         
+          <th pSortableColumn="updatedAt">
           <th>Actions</th>
         </tr>
       </ng-template>
-      <ng-template pTemplate="body" let-log>
+      <!-- <ng-template pTemplate="body" let-log>
         <tr>
           <td>
             <span class="request-id">{{ log.requestId }}</span>
@@ -262,7 +199,76 @@
             />
           </td>
         </tr>
-      </ng-template>
+      </ng-template> -->
+      <ng-template pTemplate="body" let-log>
+  <tr>
+    <!-- Request ID -->
+    <td>
+      <span class="request-id">
+        {{ log.requestId || getMetaValue(log.metadata, 'RequestId') || '-' }}
+      </span>
+    </td>
+
+    <!-- Type -->
+    <td>
+      <span class="type-badge">
+        <i [class]="getTypeIcon(log.type || getMetaValue(log.metadata, 'event_type'))"></i>
+        {{ (log.type || getMetaValue(log.metadata, 'event_type') || 'N/A') | titlecase }}
+      </span>
+    </td>
+
+    <!-- Mode / Service -->
+    <td>
+      <span class="mode-badge">
+        <i [class]="getModeIcon(log.mode || getMetaValue(log.metadata, 'Service') || getMetaValue(log.metadata, 'service'))"></i>
+        {{ (log.mode || getMetaValue(log.metadata, 'Service') || getMetaValue(log.metadata, 'service') || 'N/A') | titlecase }}
+      </span>
+    </td>
+
+    <!-- Recipients -->
+    <td class="recipient">
+      {{ log.recipients?.length ? log.recipients.join(', ') : '-' }}
+    </td>
+
+    <!-- Message -->
+    <td class="message-col">
+      <span class="message-text">
+        {{ log.message | slice:0:60 }}
+        {{ log.message?.length > 60 ? '...' : '' }}
+      </span>
+    </td>
+
+    <!-- Status -->
+    <td>
+      <p-tag
+        [value]="getStatusLabel(log.status)"
+        [severity]="getStatusSeverity(log.status)"
+      />
+    </td>
+
+    <!-- Created -->
+    <td class="timestamp">
+      {{ log.createdAt | date:'short' }}
+    </td>
+
+    <!-- Updated -->
+    <td class="timestamp">
+      {{ log.updatedAt ? (log.updatedAt | date:'short') : '-' }}
+    </td>
+
+    <!-- Action -->
+    <td>
+      <p-button
+        icon="pi pi-eye"
+        [rounded]="true"
+        [text]="true"
+        severity="info"
+        pTooltip="View Timeline"
+        (onClick)="viewTimeline(log.id)"
+      />
+    </td>
+  </tr>
+</ng-template>
       <ng-template pTemplate="emptymessage">
         <tr>
           <td colspan="9" class="empty-message">
