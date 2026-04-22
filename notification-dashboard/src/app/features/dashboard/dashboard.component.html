@@ -250,7 +250,7 @@
 
     <!-- Created -->
     <td class="timestamp">
-      {{ log.createdAt | date:' short' }}
+      {{ log.createdAt | date:'dd/MM/yyyy, h:mm a' }}
     </td>
 
     <!-- Updated -->
@@ -266,7 +266,7 @@
         [text]="true"
         severity="info"
         pTooltip="View Timeline"
-        (onClick)="viewTimeline(log.id)"
+        (onClick)="viewTimeline(log.requestId)"
       />
     </td>
   </tr>

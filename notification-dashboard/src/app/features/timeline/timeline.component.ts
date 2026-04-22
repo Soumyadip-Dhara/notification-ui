@@ -83,6 +83,9 @@ export class TimelineComponent implements OnInit {
       delivered: 'pi pi-check-circle',
       failed: 'pi pi-times-circle',
       cancelled: 'pi pi-ban',
+      api_initiated: 'pi pi-play-circle',
+      api_terminated: 'pi pi-stop-circle',
+      background_service: 'pi pi-cog',
     };
     return icons[event] ?? 'pi pi-circle';
   }
@@ -97,6 +100,9 @@ export class TimelineComponent implements OnInit {
       delivered: '#22c55e',
       failed: '#ef4444',
       cancelled: '#6b7280',
+      api_initiated: '#8b5cf6',
+      api_terminated: '#d97706',
+      background_service: '#0891b2',
     };
     return colors[event] ?? '#6366f1';
   }
@@ -127,7 +133,13 @@ export class TimelineComponent implements OnInit {
   }
 
   getModeLabel(mode: string): string {
-    return mode === 'queue' ? 'Via Queue' : 'Direct';
+    return mode === 'queue' || mode === 'VIA QUEUE' ? 'Via Queue' : 'Direct';
+  }
+
+  getRecipientsLabel(recipients?: string[]): string {
+    if (!recipients || recipients.length === 0) return 'N/A';
+    if (recipients.length === 1) return recipients[0];
+    return `${recipients.length} recipients`;
   }
 
   formatDuration(ms?: number): string {

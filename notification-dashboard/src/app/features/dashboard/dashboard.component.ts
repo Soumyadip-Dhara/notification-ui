@@ -238,6 +238,7 @@ export class DashboardComponent implements OnInit {
   // ===================== UI HELPERS =====================
 
   viewTimeline(requestId: string): void {
+    debugger;
     this.router.navigate(['/timeline', requestId]);
   }
 

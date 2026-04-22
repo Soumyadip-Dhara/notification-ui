@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of, throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import {
   NotificationLog,
@@ -334,15 +334,42 @@ export class NotificationService {
 
   getTimeline(requestId: string): Observable<RequestTimeline> {
     return this.http
-      .get<RequestTimeline>(`${this.baseUrl}/api/notifications/${requestId}/timeline`)
+      .get<any>(`${this.baseUrl}/api/Dashboard/${requestId}/timeline`)
       .pipe(
-        catchError(() => {
-          // const timeline = MOCK_TIMELINES[requestId];
-          // if (timeline) return of(timeline);
-          // const log = MOCK_LOGS.find((l) => l.requestId === requestId);
-          // if (log) return of(this.buildMockTimeline(log));
-          return throwError(() => new Error(`Request ID ${requestId} not found`));
+        map((response) => {
+          const timelineData = response?.result || response;
+          return this.transformTimelineResponse(timelineData);
         }),
+        catchError(() => {
+          // Fallback: try fetching logs and building timeline
+          return this.getNotificationsByRequestId(requestId).pipe(
+            catchError(() => {
+              return throwError(() => new Error(`Request ID ${requestId} not found`));
+            }),
+          );
+        }),
+      );
+  }
+
+  /**
+   * Fetch all logs for a specific request ID and transform into timeline
+   */
+  private getNotificationsByRequestId(requestId: string): Observable<RequestTimeline> {
+    return this.http
+      .get<IApiResponce<PagedResult<NotificationLog>>>(
+        `${this.baseUrl}/api/Dashboard/notifications`,
+        { params: new HttpParams().set('requestId', requestId).set('pageSize', '1000') }
+      )
+      .pipe(
+        map((response) => {
+          const logs = response?.result?.items || [];
+          const timeline = this.buildTimelineFromLogs(logs);
+          if (!timeline) {
+            throw new Error(`No logs found for ${requestId}`);
+          }
+          return timeline;
+        }),
+        catchError(() => throwError(() => new Error(`Failed to load logs for ${requestId}`))),
       );
   }
 
@@ -468,5 +495,215 @@ export class NotificationService {
     //   // summary.byMode[log.mode]++;
     // }
     return summary;
+  }
+
+  /**
+   * Transform notification logs into a RequestTimeline
+   * Fallback method for when timeline endpoint isn't used
+   */
+  private buildTimelineFromLogs(logs: NotificationLog[]): RequestTimeline | null {
+    if (!logs.length) return null;
+
+    // Convert logs to timeline event format
+    const timelineData = {
+      requestId: logs[0].requestId || '',
+      type: logs[0].type?.toLowerCase() || 'sms',
+      mode: logs[0].mode?.toLowerCase() || 'direct',
+      recipients: logs[0].recipients || [],
+      events: logs.map((log) => ({
+        id: log.id,
+        requestId: log.requestId,
+        event: log.type || '',
+        status: 'unknown',
+        message: log.message,
+        timestamp: log.createdAt,
+        eventType: log.type,
+        level: 'Information',
+        details: typeof log.metadata === 'string' ? log.metadata : JSON.stringify(log.metadata),
+        finYear: 0,
+        month: 0,
+      })),
+      finYear: 0,
+      month: 1,
+    };
+
+    return this.transformTimelineResponse(timelineData);
+  }
+
+  /**
+   * Transform API response into RequestTimeline
+   * Handles the actual backend API response format
+   */
+  private transformTimelineResponse(data: any): RequestTimeline {
+    if (!data.events || data.events.length === 0) {
+      throw new Error('No events found in timeline');
+    }
+
+    // Transform events and parse details
+    const events: TimelineEvent[] = data.events.map((event: any, index: number) => {
+      // Parse details if it's a string
+      let details: any = {};
+      if (typeof event.details === 'string') {
+        try {
+          details = JSON.parse(event.details);
+        } catch {
+          details = {};
+        }
+      } else {
+        details = event.details || {};
+      }
+
+      // Get status from details.Status if available, otherwise from event.status
+      let status: any = event.status;
+      if (!status || status === 'unknown') {
+        const statusNum = details.Status;
+        status = this.mapStatusToEventStatus(statusNum);
+      }
+
+      // Map event type
+      const timelineEventType = this.mapEventType(event.eventType || event.event);
+
+      // Calculate duration from previous event
+      let durationMs: number | undefined;
+      if (index > 0) {
+        const prevTime = new Date(data.events[index - 1].timestamp).getTime();
+        const currTime = new Date(event.timestamp).getTime();
+        durationMs = Math.max(0, currTime - prevTime);
+      }
+
+      // Extract fin_year and month from details or top-level
+      let finYear = data.finYear;
+      let month = data.month;
+
+      if (details && typeof details === 'object') {
+        if (details['fin_year']) finYear = details['fin_year'];
+        if (details['month']) month = details['month'];
+      }
+
+      return {
+        id: event.id,
+        requestId: event.requestId || data.requestId,
+        event: timelineEventType,
+        status,
+        message: event.message || '',
+        timestamp: event.timestamp,
+        eventType: event.eventType || event.event,
+        level: event.level || 'Information',
+        finYear,
+        month,
+        details: this.extractEventDetails(details),
+        durationMs,
+      };
+    });
+
+    // Determine final status from the last event
+    const lastEvent = events[events.length - 1];
+    let currentStatus = 'unknown';
+    if (lastEvent.status === 'success') {
+      currentStatus = 'delivered';
+    } else if (lastEvent.status === 'error') {
+      currentStatus = 'failed';
+    } else if (lastEvent.status === 'warning') {
+      currentStatus = 'processing';
+    }
+
+    // Get mode from details - check if QueueName exists
+    let mode = data.mode?.toLowerCase() || 'direct';
+    if (data.events.length > 0) {
+      const firstEventDetails = typeof data.events[0].details === 'string'
+        ? JSON.parse(data.events[0].details)
+        : data.events[0].details;
+
+      if (firstEventDetails?.QueueName) {
+        mode = 'queue';
+      }
+    }
+
+    return {
+      requestId: data.requestId,
+      type: data.type?.toLowerCase() || 'sms',
+      mode,
+      recipients: data.recipients || [],
+      currentStatus,
+      events,
+      finYear: data.finYear,
+      month: data.month,
+    };
+  }
+
+  /**
+   * Map database event type to timeline event type
+   */
+  private mapEventType(eventType: string): any {
+    const typeMap: Record<string, any> = {
+      'API_CALLED_INITIATED': 'api_initiated',
+      'API CALLED INITIATED': 'api_initiated',
+      'API_CALLED_TERMINATED': 'api_terminated',
+      'API CALLED TERMINATED': 'api_terminated',
+      'SMS_BACKGROUND_SERVICE_INITIATED': 'background_service',
+      'SMS BACKGROUND SERVICE INITIATED': 'background_service',
+      'EMAIL_BACKGROUND_SERVICE_INITIATED': 'background_service',
+      'EMAIL BACKGROUND SERVICE INITIATED': 'background_service',
+      'QUEUED': 'queued',
+      'PROCESSING': 'processing',
+      'SENT': 'sent',
+      'DELIVERED': 'delivered',
+      'FAILED': 'failed',
+      'CANCELLED': 'cancelled',
+    };
+    return typeMap[eventType] || 'processing';
+  }
+
+  /**
+   * Map numeric status to event status string
+   */
+  private mapStatusToEventStatus(status: number | null | undefined): 'success' | 'error' | 'warning' | 'info' {
+    switch (status) {
+      case 0: return 'error';
+      case 1: return 'success';
+      case 2: return 'warning';
+      default: return 'info';
+    }
+  }
+
+  /**
+   * Extract details from properties JSON
+   */
+  private extractEventDetails(properties: any): Record<string, unknown> | undefined {
+    if (!properties) return undefined;
+
+    const details: Record<string, unknown> = {};
+    const keyMap: Record<string, string> = {
+      'Result': 'Result',
+      'Status': 'Status',
+      'Message': 'Message',
+      'Service': 'Service',
+      'EndPoint': 'EndPoint',
+      'EventType': 'EventType',
+      'ProcessId': 'ProcessId',
+      'QueueName': 'QueueName',
+      'ResponseTime': 'ResponseTime',
+      'FailureCount': 'FailureCount',
+    };
+
+    for (const [key, displayKey] of Object.entries(keyMap)) {
+      if (properties[key] !== undefined && properties[key] !== null) {
+        details[displayKey] = properties[key];
+      }
+    }
+
+    return Object.keys(details).length > 0 ? details : undefined;
+  }
+
+  /**
+   * Get human-readable status label
+   */
+  private getStatusLabel(status: number | null | undefined): string {
+    switch (status) {
+      case 0: return 'failed';
+      case 1: return 'delivered';
+      case 2: return 'processing';
+      default: return 'pending';
+    }
   }
 }
