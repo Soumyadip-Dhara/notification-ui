@@ -151,7 +151,9 @@
             Created At
             <p-sortIcon field="createdAt"></p-sortIcon>
           </th>         
-          <th pSortableColumn="updatedAt">
+          <th>
+            End Point
+          </th>
           <th>Actions</th>
         </tr>
       </ng-template>
@@ -217,7 +219,7 @@
       </span>
     </td>
 
-    <!-- Mode / Service -->
+    <!-- Mode / Service --> 
     <td>
       <span class="mode-badge">
         <i [class]="getModeIcon(log.mode || getMetaValue(log.metadata, 'Service') || getMetaValue(log.metadata, 'service'))"></i>
@@ -248,12 +250,12 @@
 
     <!-- Created -->
     <td class="timestamp">
-      {{ log.createdAt | date:'short' }}
+      {{ log.createdAt | date:' short' }}
     </td>
 
     <!-- Updated -->
-    <td class="timestamp">
-      {{ log.updatedAt ? (log.updatedAt | date:'short') : '-' }}
+    <td >
+      {{ log.endPoint || getMetaValue(log.metadata, 'EndPoint') || getMetaValue(log.metadata, 'end_point') || '-' }}
     </td>
 
     <!-- Action -->
