@@ -118,14 +118,18 @@ export class TimelineComponent implements OnInit {
   }
 
   getStatusSeverity(status: string): 'success' | 'info' | 'warn' | 'danger' | 'secondary' {
-    const map: Record<NotificationStatus, 'success' | 'info' | 'warn' | 'danger' | 'secondary'> = {
+    const map: Record<string, 'success' | 'info' | 'warn' | 'danger' | 'secondary'> = {
+      success: 'success',
+      error: 'danger',
+      warning: 'warn',
+      info: 'info',
       delivered: 'success',
       sent: 'info',
       processing: 'warn',
       pending: 'secondary',
       failed: 'danger',
     };
-    return map[status as NotificationStatus] ?? 'secondary';
+    return map[status] ?? 'secondary';
   }
 
   getTypeIcon(type: string): string {

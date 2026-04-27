@@ -14,6 +14,7 @@ import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
 import { SkeletonModule } from 'primeng/skeleton';
 import { DividerModule } from 'primeng/divider';
+import { DatePickerModule } from 'primeng/datepicker';
 import { NotificationService } from '../../core/services/notification.service';
 import {
   NotificationLog,
@@ -46,6 +47,7 @@ interface SelectOption {
     ToastModule,
     SkeletonModule,
     DividerModule,
+    DatePickerModule,
   ],
   providers: [MessageService],
   templateUrl: './dashboard.component.html',
@@ -65,28 +67,31 @@ export class DashboardComponent implements OnInit {
   filter: NotificationFilter = {};
   searchRequestId = '';
   searchRecipient = '';
+  dateRange: Date[] | null = null;
 
   page = 1;
   pageSize = 10;
 
   typeOptions: SelectOption[] = [
     { label: 'All Types', value: '' },
-    { label: 'Email', value: 'email' },
-    { label: 'SMS', value: 'sms' },
+    { label: 'Email', value: 'Email' },
+    { label: 'SMS', value: 'SMS' },
   ];
 
   modeOptions: SelectOption[] = [
     { label: 'All Modes', value: '' },
-    { label: 'Queue', value: 'queue' },
-    { label: 'Direct', value: 'direct' },
+    { label: 'Via Queue', value: 'VIA QUEUE' },
+    { label: 'Direct', value: 'DIRECT' },
   ];
 
   statusOptions: SelectOption[] = [
     { label: 'All Statuses', value: '' },
     { label: 'Pending', value: 'pending' },
-    { label: 'Processing', value: 'processing' },
-    { label: 'Sent', value: 'sent' },
-    { label: 'Delivered', value: 'delivered' },
+    // { label: 'Processing', value: 'processing' },
+    // { label: 'Sent', value: 'sent' },
+    { label: 'Success', value: 'sent' },
+    // { label: 'Delivered', value: 'delivered' },
+    // { label: 'Failed', value: 'failed' },
     { label: 'Failed', value: 'failed' },
   ];
 
@@ -97,7 +102,7 @@ export class DashboardComponent implements OnInit {
   successRate = computed(() => {
     const s = this.summary();
     if (!s || s.total === 0) return 0;
-    return Math.round(((s.sent + s.delivered) / s.total) * 100);
+    return Math.round(((s.sent) / s.total) * 100);
   });
 
   ngOnInit(): void {
@@ -181,6 +186,7 @@ export class DashboardComponent implements OnInit {
     this.selectedStatus = '';
     this.searchRequestId = '';
     this.searchRecipient = '';
+    this.dateRange = null;
     this.filter = {};
     this.page = 1;
     this.loadLogs();
@@ -192,13 +198,39 @@ export class DashboardComponent implements OnInit {
   }
 
   private buildFilter(): NotificationFilter {
-    return {
-      type: this.mapType(this.selectedType) as NotificationType | undefined,
-      mode: this.mapMode(this.selectedMode) as NotificationMode | undefined,
-      status: this.mapStatus(this.selectedStatus) as NotificationStatus | undefined,
-      requestId: this.searchRequestId || undefined,
-      recipient: this.searchRecipient || undefined,
-    };
+    const filter: NotificationFilter = {};
+    
+    const mappedType = this.mapType(this.selectedType);
+    if (mappedType !== undefined) {
+      filter.type = mappedType as NotificationType;
+    }
+    
+    const mappedMode = this.mapMode(this.selectedMode);
+    if (mappedMode !== undefined) {
+      filter.mode = mappedMode as NotificationMode;
+    }
+    
+    const mappedStatus = this.mapStatus(this.selectedStatus);
+    if (mappedStatus !== undefined) {
+      filter.status = mappedStatus as NotificationStatus;
+    }
+    
+    if (this.searchRecipient) {
+      filter.recipient = this.searchRecipient;
+    }
+
+    if (this.dateRange && this.dateRange.length === 2) {
+      if (this.dateRange[0]) {
+        filter.fromDate = this.dateRange[0].toISOString().split('T')[0];
+      }
+      if (this.dateRange[1]) {
+        const toDayPlusOne = new Date(this.dateRange[1]);
+        toDayPlusOne.setDate(toDayPlusOne.getDate() + 1);
+        filter.toDate = this.formatDate(toDayPlusOne);
+      }
+    }
+    
+    return filter;
   }
 
   // ===================== MAPPERS (CRITICAL FIX) =====================
@@ -210,11 +242,7 @@ export class DashboardComponent implements OnInit {
 
   private mapMode(value: string): string | undefined {
     if (!value) return undefined;
-
-    if (value === 'queue') return 'VIA QUEUE';
-    if (value === 'direct') return 'DIRECT';
-
-    return undefined;
+    return value; // VIA QUEUE and DIRECT are already in correct format
   }
 
   private mapStatus(value: string): number | undefined {
@@ -249,21 +277,19 @@ export class DashboardComponent implements OnInit {
       NotificationStatus,
       'success' | 'info' | 'warn' | 'danger' | 'secondary'
     > = {
-      delivered: 'success',
-      sent: 'info',
-      processing: 'warn',
-      pending: 'secondary',
-      failed: 'danger',
+      0: 'danger',
+      1: 'success',
+      2: 'secondary',
     };
     return map[status] ?? 'secondary';
   }
 
   getTypeIcon(type: NotificationType): string {
-    return type === 'email' ? 'pi pi-envelope' : 'pi pi-mobile';
+    return type === 'EMAIL' ? 'pi pi-envelope' : 'pi pi-mobile';
   }
 
   getModeIcon(mode: NotificationMode): string {
-    return mode === 'queue' ? 'pi pi-list' : 'pi pi-bolt';
+    return mode === 'VIA QUEUE' ? 'pi pi-list' : 'pi pi-bolt';
   }
 
 
@@ -288,4 +314,9 @@ getStatusLabel(status: number | null): string {
     default: return 'Unknown';
   }
 }
-}
+private formatDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}}

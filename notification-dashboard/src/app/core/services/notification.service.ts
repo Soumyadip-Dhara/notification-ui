@@ -312,14 +312,15 @@ export class NotificationService {
 
     if (filter) {
       // if (filter.type) params = params.set('type', filter.type);
-      if (filter.type) params = params.set('eventType', filter.type);
-      // if (filter.mode) params = params.set('mode', filter.mode);
-      if (filter.status) params = params.set('status', filter.status);
+      if (filter.type) params = params.set('service', filter.type);
+      if (filter.mode) params = params.set('mode', filter.mode);
+      if (filter.status !== undefined) params = params.set('status', filter.status.toString());
       if (filter.fromDate) params = params.set('fromDate', filter.fromDate);
       if (filter.toDate) params = params.set('toDate', filter.toDate);
       if (filter.recipient) params = params.set('recipient', filter.recipient);
-      if (filter.requestId) params = params.set('requestId', filter.requestId);
+      // if (filter.requestId) params = params.set('requestId', filter.requestId);
     }
+
 
     return this.http
       .get<IApiResponce<PagedResult<NotificationLog>>>(`${this.baseUrl}/api/Dashboard/notifications`, { params })
@@ -374,7 +375,8 @@ export class NotificationService {
   }
 
   getSummary(): Observable<NotificationSummary> {
-    return this.http.get<NotificationSummary>(`${this.baseUrl}/api/notifications/summary`).pipe(
+    return this.http.get<any>(`${this.baseUrl}/api/dashboard/summary`).pipe(
+      map((response) => response?.result || response as NotificationSummary),
       catchError(() => of(this.computeMockSummary())),
     );
   }
@@ -487,6 +489,8 @@ export class NotificationService {
       delivered: 0,
       byType: { sms: 0, email: 0 },
       byMode: { queue: 0, direct: 0 },
+      lastEmailSuccessAt: undefined,
+      lastSmsSuccessAt: undefined,
     };
     // for (const log of MOCK_LOGS) {
     //   summary.total++;

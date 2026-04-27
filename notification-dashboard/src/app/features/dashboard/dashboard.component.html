@@ -7,6 +7,7 @@
     <p class="subtitle">Monitor and track all notification logs across SMS and Email channels</p>
   </div>
 
+
   <!-- Summary Cards -->
   <div class="summary-grid">
     @if (summaryLoading()) {
@@ -23,15 +24,6 @@
           <div class="summary-info">
             <span class="summary-label">Total</span>
             <span class="summary-value">{{ summary()!.total }}</span>
-          </div>
-        </div>
-      </p-card>
-      <p-card styleClass="summary-card summary-card--delivered">
-        <div class="summary-content">
-          <div class="summary-icon"><i class="pi pi-check-circle"></i></div>
-          <div class="summary-info">
-            <span class="summary-label">Delivered</span>
-            <span class="summary-value">{{ summary()!.delivered }}</span>
           </div>
         </div>
       </p-card>
@@ -58,7 +50,7 @@
           <div class="summary-icon"><i class="pi pi-clock"></i></div>
           <div class="summary-info">
             <span class="summary-label">Pending</span>
-            <span class="summary-value">{{ summary()!.pending + summary()!.processing }}</span>
+            <span class="summary-value">{{ summary()!.pending || 0 }}</span>
           </div>
         </div>
       </p-card>
@@ -84,7 +76,23 @@
             <span>Email</span>
           </div>
         </ng-template>
-        <div class="breakdown-count">{{ summary()!.byType.email }} notifications</div>
+        <div class="breakdown-content">
+          <div class="breakdown-count">{{ summary()!.byType.email }} notifications</div>
+          @if (summary()!.lastEmailSuccessAt) {
+            <div class="last-success-badge">
+              <i class="pi pi-check-circle"></i>
+              <div class="success-info">
+                <span class="success-label">Last Success</span>
+                <span class="success-time">{{ summary()!.lastEmailSuccessAt | date:'dd/MM/yyyy, h:mm a' }}</span>
+              </div>
+            </div>
+          } @else {
+            <div class="no-success-badge">
+              <i class="pi pi-info-circle"></i>
+              <span>No successful notifications yet</span>
+            </div>
+          }
+        </div>
       </p-card>
       <p-card styleClass="breakdown-card">
         <ng-template pTemplate="header">
@@ -93,7 +101,23 @@
             <span>SMS</span>
           </div>
         </ng-template>
-        <div class="breakdown-count">{{ summary()!.byType.sms }} notifications</div>
+        <div class="breakdown-content">
+          <div class="breakdown-count">{{ summary()!.byType.sms }} notifications</div>
+          @if (summary()!.lastSmsSuccessAt) {
+            <div class="last-success-badge">
+              <i class="pi pi-check-circle"></i>
+              <div class="success-info">
+                <span class="success-label">Last Success</span>
+                <span class="success-time">{{ summary()!.lastSmsSuccessAt | date:'dd/MM/yyyy, h:mm a' }}</span>
+              </div>
+            </div>
+          } @else {
+            <div class="no-success-badge">
+              <i class="pi pi-info-circle"></i>
+              <span>No successful notifications yet</span>
+            </div>
+          }
+        </div>
       </p-card>
       <p-card styleClass="breakdown-card">
         <ng-template pTemplate="header">
@@ -120,6 +144,87 @@
 
   <!-- Filters -->
 
+  <p-card styleClass="filter-card">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label>Service</label>
+        <p-select
+          [options]="typeOptions"
+          [(ngModel)]="selectedType"
+          optionLabel="label"
+          optionValue="value"
+          (onChange)="onFilterChange()"
+          styleClass="filter-select"
+        />
+      </div>
+      <div class="filter-group">
+        <label>Mode</label>
+        <p-select
+          [options]="modeOptions"
+          [(ngModel)]="selectedMode"
+          optionLabel="label"
+          optionValue="value"
+          (onChange)="onFilterChange()"
+          styleClass="filter-select"
+        />
+      </div>
+      <div class="filter-group">
+        <label>Status</label>
+        <p-select
+          [options]="statusOptions"
+          [(ngModel)]="selectedStatus"
+          optionLabel="label"
+          optionValue="value"
+          (onChange)="onFilterChange()"
+          styleClass="filter-select"
+        />
+      </div>
+      <!-- <div class="filter-group filter-group--search">
+        <label>Request ID</label>
+        <p-iconfield>
+          <p-inputicon styleClass="pi pi-search" />
+          <input
+            pInputText
+            [(ngModel)]="searchRequestId"
+            placeholder="Search request ID..."
+            (input)="onFilterChange()"
+          />
+        </p-iconfield>
+      </div> -->
+      <div class="filter-group filter-group--search">
+        <label>Recipient</label>
+        <p-iconfield>
+          <p-inputicon styleClass="pi pi-user" />
+          <input
+            pInputText
+            [(ngModel)]="searchRecipient"
+            placeholder="Search recipient..."
+            (input)="onFilterChange()"
+          />
+        </p-iconfield>
+      </div>
+      <div class="filter-group">
+        <label>Date Range</label>
+        <p-datepicker
+          [(ngModel)]="dateRange"
+          selectionMode="range"
+          dateFormat="dd/mm/yy"
+          placeholder="Select date range"
+          (onSelect)="onFilterChange()"
+        />
+      </div>
+      <div class="filter-actions">
+        <p-button
+          label="Clear"
+          icon="pi pi-times"
+          severity="secondary"
+          (onClick)="clearFilters()"
+        />
+      </div>
+    </div>
+  </p-card>
+
+
   <!-- Data Table -->
   <p-card styleClass="table-card">
     <p-table
@@ -139,10 +244,11 @@
       <ng-template pTemplate="header">
         <tr>
           <th>Request ID</th>
-          <th>Type</th>
+          <!-- <th>Type</th> -->
+          <th>Service</th>
           <th>Mode</th>
           <th>Recipient</th>
-          <th>Subject / Message</th>
+          <th>Message</th>
           <th pSortableColumn="status">
             Status
             <p-sortIcon field="status"></p-sortIcon>
@@ -212,24 +318,42 @@
     </td>
 
     <!-- Type -->
-    <td>
+    <!-- <td>
       <span class="type-badge">
         <i [class]="getTypeIcon(log.type || getMetaValue(log.metadata, 'event_type'))"></i>
         {{ (log.type || getMetaValue(log.metadata, 'event_type') || 'N/A') | titlecase }}
       </span>
-    </td>
+    </td> -->
 
-    <!-- Mode / Service --> 
+
+    <!--  Service --> 
+    <td>
+      <span class="type-badge">
+       <i [class]="getTypeIcon(log.service || getMetaValue(log.metadata, 'Service'))"></i>
+        {{ (log.service || getMetaValue(log.metadata, 'Service') || getMetaValue(log.metadata, 'service') || 'N/A') | titlecase }}
+      </span>
+    </td>
+    
+
+    <!--  Mode --> 
     <td>
       <span class="mode-badge">
-        <i [class]="getModeIcon(log.mode || getMetaValue(log.metadata, 'Service') || getMetaValue(log.metadata, 'service'))"></i>
-        {{ (log.mode || getMetaValue(log.metadata, 'Service') || getMetaValue(log.metadata, 'service') || 'N/A') | titlecase }}
+        <i [class]="getModeIcon(log.mode || getMetaValue(log.metadata, 'Mode') || getMetaValue(log.metadata, 'mode'))"></i>
+        {{ (log.mode || getMetaValue(log.metadata, 'Mode') || getMetaValue(log.metadata, 'mode') || 'N/A') | titlecase }}
       </span>
     </td>
 
     <!-- Recipients -->
     <td class="recipient">
-      {{ log.recipients?.length ? log.recipients.join(', ') : '-' }}
+      @if (log.recipients?.length) {
+        <div class="recipient-badges">
+          @for (recipient of log.recipients; track recipient) {
+            <span class="recipient-badge">{{ recipient }}</span>
+          }
+        </div>
+      } @else {
+        <span>-</span>
+      }
     </td>
 
     <!-- Message -->

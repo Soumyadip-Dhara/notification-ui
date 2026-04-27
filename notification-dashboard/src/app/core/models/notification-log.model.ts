@@ -1,6 +1,6 @@
-export type NotificationType = 'sms' | 'email';
-export type NotificationMode = 'queue' | 'direct';
-export type NotificationStatus = 'pending' | 'processing' | 'sent' | 'failed' | 'delivered';
+export type NotificationType = 'SMS' | 'EMAIL';
+export type NotificationMode = 'VIA QUEUE' | 'DIRECT';
+export type NotificationStatus = 2 | 1 | 0 ;
 
 // export interface NotificationLog {
 //   id: string;
@@ -44,7 +44,8 @@ export interface NotificationFilter {
   fromDate?: string;
   toDate?: string;
   recipient?: string;
-  requestId?: string;
+  service?: string;
+  // requestId?: string;
 }
 
 export interface IApiResponce<T> {
@@ -68,4 +69,6 @@ export interface NotificationSummary {
   delivered: number;
   byType: { sms: number; email: number };
   byMode: { queue: number; direct: number };
+  lastEmailSuccessAt?: string;
+  lastSmsSuccessAt?: string;
 }
