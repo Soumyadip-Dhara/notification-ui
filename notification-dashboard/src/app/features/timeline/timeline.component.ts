@@ -86,6 +86,10 @@ export class TimelineComponent implements OnInit {
       api_initiated: 'pi pi-play-circle',
       api_terminated: 'pi pi-stop-circle',
       background_service: 'pi pi-cog',
+      'API CALLED INITIATED': 'pi pi-play-circle',
+      'API CALLED TERMINATED': 'pi pi-stop-circle',
+      'BACKGROUND SERVICE INITIATED': 'pi pi-cog',
+      'BACKGROUND SERVICE TERMINATED': 'pi pi-cog',
     };
     return icons[event] ?? 'pi pi-circle';
   }
@@ -103,6 +107,10 @@ export class TimelineComponent implements OnInit {
       api_initiated: '#8b5cf6',
       api_terminated: '#d97706',
       background_service: '#0891b2',
+      'API CALLED INITIATED': '#8b5cf6',
+      'API CALLED TERMINATED': '#d97706',
+      'BACKGROUND SERVICE INITIATED': '#0891b2',
+      'BACKGROUND SERVICE TERMINATED': '#0891b2',
     };
     return colors[event] ?? '#6366f1';
   }

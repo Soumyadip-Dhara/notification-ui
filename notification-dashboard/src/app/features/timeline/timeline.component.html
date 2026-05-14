@@ -98,7 +98,7 @@
           <div class="timeline-event-card" [class]="'event-' + event.event">
             <div class="event-header">
               <div class="event-title-row">
-                <span class="event-name">{{ event.event | titlecase }}</span>
+                <span class="event-name">{{ event.eventType || (event.event | titlecase) }}</span>
                 <p-tag
                   [value]="event.status | titlecase"
                   [severity]="getEventSeverity(event.status)"

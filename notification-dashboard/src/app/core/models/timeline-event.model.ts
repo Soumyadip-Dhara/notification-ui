@@ -9,7 +9,11 @@ export type TimelineEventType =
   | 'cancelled'
   | 'api_initiated'
   | 'api_terminated'
-  | 'background_service';
+  | 'background_service'
+  | 'API CALLED INITIATED'
+  | 'API CALLED TERMINATED'
+  | 'BACKGROUND SERVICE INITIATED'
+  | 'BACKGROUND SERVICE TERMINATED';
 
 export interface TimelineEvent {
   id: number;
